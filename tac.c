@@ -1,7 +1,3 @@
-/*
- * tac.c - TAC storage, emission, backpatching lists, validation
- *         and printing. See tac.h for the index convention.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,17 +10,7 @@ static Instruction code[MAX_INSTRUCTIONS];
 static int code_count = 0;
 static int temp_count = 0;
 
-/* Label presentation layer.
- *
- * Backpatching works entirely on internal numeric indices (see tac.h).
- * For display, every instruction that is the target of at least one
- * jump receives a label L1, L2, ... assigned in increasing instruction
- * order, so each target has exactly one label and labels are never
- * duplicated. label_of[i] == 0 means instruction i has no label (it is
- * not a jump target); labels are (re)computed by assign_labels() after
- * parsing/backpatching is complete, before validation and printing.
- * During parsing and tracing no labels exist yet, so jump targets are
- * shown as internal numbers (or ? while unresolved) in trace output. */
+
 static int label_of[MAX_INSTRUCTIONS];
 static int label_count = 0;
 
@@ -371,10 +357,7 @@ void print_tac(void)
     printf("Three Address Code:\n");
     for (int i = 0; i < code_count; i++) {
         format_instr(&code[i], buf, sizeof(buf));
-        /* A labelled instruction is printed with its label instead
-         * of its number; the underlying numbering is unchanged -
-         * instruction i is still "instruction i+1" internally and
-         * in trace output, and non-target lines keep their number. */
+
         if (label_of[i] > 0)
             printf("L%d: %s\n", label_of[i], buf);
         else
