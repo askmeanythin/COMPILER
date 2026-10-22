@@ -13,6 +13,12 @@
  *   - The last instruction emitted for a successful program is a
  *     KIND_END marker ("end"), so every valid jump target satisfies
  *     0 <= target < instruction_count.
+ *   - Presentation: in the final printed TAC, every instruction that
+ *     is a jump target is labelled L1, L2, ... (in instruction order)
+ *     and printed as "L<k>: <instruction>"; jumps print "goto L<k>".
+ *     Non-target instructions keep their 1-based number. Labels are a
+ *     display mapping over the numeric indices only - backpatching
+ *     itself always works on the numeric indices above.
  */
 #ifndef TAC_H
 #define TAC_H

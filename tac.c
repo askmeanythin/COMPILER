@@ -14,6 +14,34 @@ static Instruction code[MAX_INSTRUCTIONS];
 static int code_count = 0;
 static int temp_count = 0;
 
+/* Label presentation layer.
+ *
+ * Backpatching works entirely on internal numeric indices (see tac.h).
+ * For display, every instruction that is the target of at least one
+ * jump receives a label L1, L2, ... assigned in increasing instruction
+ * order, so each target has exactly one label and labels are never
+ * duplicated. label_of[i] == 0 means instruction i has no label (it is
+ * not a jump target); labels are (re)computed by assign_labels() after
+ * parsing/backpatching is complete, before validation and printing.
+ * During parsing and tracing no labels exist yet, so jump targets are
+ * shown as internal numbers (or ? while unresolved) in trace output. */
+static int label_of[MAX_INSTRUCTIONS];
+static int label_count = 0;
+
+static void assign_labels(void)
+{
+    for (int i = 0; i < code_count; i++)
+        label_of[i] = 0;
+    label_count = 0;
+    for (int i = 0; i < code_count; i++) {
+        if ((code[i].kind == KIND_IF || code[i].kind == KIND_GOTO) &&
+            code[i].target >= 0 && code[i].target < code_count &&
+            label_of[code[i].target] == 0) {
+            label_of[code[i].target] = ++label_count;
+        }
+    }
+}
+
 int nextinstr(void)
 {
     return code_count;
@@ -194,6 +222,52 @@ void backpatch(List p, int target)
 int validate_tac(void)
 {
     int errors = 0;
+
+    /* The program must end with the end marker, so that every label
+     * and jump target refers to a real instruction.                 */
+    if (code_count == 0 || code[code_count - 1].kind != KIND_END) {
+        fprintf(stderr,
+                "Validation error: program does not end with an "
+                "'end' instruction\n");
+        errors++;
+    }
+
+    /* Label checks: compute the label assignment, then require that
+     * every jump target received exactly one label (assign_labels
+     * gives each distinct target a unique label, so a jump whose
+     * target has label 0 would mean the mapping is inconsistent),
+     * and that the labels in use are exactly L1..L<label_count>.    */
+    assign_labels();
+    {
+        int seen[MAX_INSTRUCTIONS];
+        for (int i = 0; i < code_count; i++)
+            seen[i] = 0;
+        for (int i = 0; i < code_count; i++) {
+            if (label_of[i] > 0) {
+                if (label_of[i] > label_count || seen[label_of[i]]) {
+                    fprintf(stderr,
+                            "Validation error: duplicate or invalid "
+                            "label L%d\n",
+                            label_of[i]);
+                    errors++;
+                }
+                seen[label_of[i]] = 1;
+            }
+        }
+        for (int i = 0; i < code_count; i++) {
+            Instruction *ins = &code[i];
+            if ((ins->kind == KIND_IF || ins->kind == KIND_GOTO) &&
+                ins->target >= 0 && ins->target < code_count &&
+                label_of[ins->target] == 0) {
+                fprintf(stderr,
+                        "Validation error: instruction %d jumps to "
+                        "instruction %d, which has no label\n",
+                        i + 1, ins->target + 1);
+                errors++;
+            }
+        }
+    }
+
     for (int i = 0; i < code_count; i++) {
         Instruction *ins = &code[i];
         switch (ins->kind) {
@@ -264,6 +338,10 @@ void format_instr(const Instruction *ins, char *buf, unsigned long bufsize)
         if (ins->target == TARGET_UNRESOLVED)
             snprintf(buf, bufsize, "if %s %s %s goto ?", ins->arg1,
                      ins->op, ins->arg2);
+        else if (ins->target >= 0 && ins->target < code_count &&
+                 label_of[ins->target] > 0)
+            snprintf(buf, bufsize, "if %s %s %s goto L%d", ins->arg1,
+                     ins->op, ins->arg2, label_of[ins->target]);
         else
             snprintf(buf, bufsize, "if %s %s %s goto %d", ins->arg1,
                      ins->op, ins->arg2, ins->target + 1);
@@ -271,6 +349,9 @@ void format_instr(const Instruction *ins, char *buf, unsigned long bufsize)
     case KIND_GOTO:
         if (ins->target == TARGET_UNRESOLVED)
             snprintf(buf, bufsize, "goto ?");
+        else if (ins->target >= 0 && ins->target < code_count &&
+                 label_of[ins->target] > 0)
+            snprintf(buf, bufsize, "goto L%d", label_of[ins->target]);
         else
             snprintf(buf, bufsize, "goto %d", ins->target + 1);
         break;
@@ -286,9 +367,17 @@ void format_instr(const Instruction *ins, char *buf, unsigned long bufsize)
 void print_tac(void)
 {
     char buf[512];
+    assign_labels();
     printf("Three Address Code:\n");
     for (int i = 0; i < code_count; i++) {
         format_instr(&code[i], buf, sizeof(buf));
-        printf("%d: %s\n", i + 1, buf);
+        /* A labelled instruction is printed with its label instead
+         * of its number; the underlying numbering is unchanged -
+         * instruction i is still "instruction i+1" internally and
+         * in trace output, and non-target lines keep their number. */
+        if (label_of[i] > 0)
+            printf("L%d: %s\n", label_of[i], buf);
+        else
+            printf("%d: %s\n", i + 1, buf);
     }
 }

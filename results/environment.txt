@@ -1,5 +1,5 @@
 Environment used to build and test this project
-Captured: Thu Oct 22 2026 10:35 Asia
+Captured: Thu Oct 22 2026 18:14 Asia
 
 PRETTY_NAME="Ubuntu 24.04.5 LTS"
 NAME="Ubuntu"
@@ -10,6 +10,7 @@ gcc: gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
 flex: flex 2.6.4
 bison: bison (GNU Bison) 3.8.2
 make: GNU Make 4.3
+bash (test harness): GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
 user: root, HOME=/home/hatch
-disk (home): /dev/mapper/rv  100G  1.3G   98G   2% /home/hatch
-RAM: Mem:           7.7Gi       7.4Gi       155Mi       114Mi       578Mi       382Mi
+disk (home): /dev/mapper/rv  100G  1.4G   98G   2% /home/hatch
+RAM: Mem:           7.7Gi       7.5Gi       176Mi       116Mi       397Mi       220Mi

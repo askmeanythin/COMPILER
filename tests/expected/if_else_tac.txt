@@ -1,11 +1,11 @@
 Three Address Code:
 1: a = 10
 2: b = 20
-3: if a < b goto 5
-4: goto 8
-5: t1 = a + b
+3: if a < b goto L1
+4: goto L2
+L1: t1 = a + b
 6: c = t1
-7: goto 10
-8: t2 = a - b
+7: goto L3
+L2: t2 = a - b
 9: c = t2
-10: end
+L3: end

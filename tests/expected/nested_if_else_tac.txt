@@ -2,18 +2,18 @@ Three Address Code:
 1: a = 10
 2: b = 20
 3: c = 5
-4: if a < b goto 6
-5: goto 12
-6: if b > c goto 8
-7: goto 10
-8: result = 1
-9: goto 17
-10: result = 2
-11: goto 17
-12: if a == c goto 14
-13: goto 16
-14: result = 3
-15: goto 17
-16: result = 4
-17: done = result
+4: if a < b goto L1
+5: goto L2
+L1: if b > c goto L3
+7: goto L4
+L3: result = 1
+9: goto L5
+L4: result = 2
+11: goto L5
+L2: if a == c goto L6
+13: goto L7
+L6: result = 3
+15: goto L5
+L7: result = 4
+L5: done = result
 18: end

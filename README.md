@@ -73,8 +73,10 @@ if_else_compiler/
 │   ├── assignment.src      arithmetic.src     simple_if.src
 │   ├── if_else.src         nested_if_else.src sequential_if.src
 │   ├── multiple_statements.src                invalid_syntax.src
+│   ├── simple_if_gt.src    (simple-if reference example)
+│   └── nested_simple.src   (nested reference example)
 ├── tests/
-│   ├── test_compiler.sh    automated suite (24 tests)
+│   ├── test_compiler.sh    automated suite (28 tests)
 │   ├── cases/              per-test input programs
 │   └── expected/           golden TAC outputs for key examples
 └── results/                genuine captured outputs
@@ -167,15 +169,22 @@ typedef struct {
 
 ## 10. TAC instruction format
 
-Instructions are stored 0-based internally and **displayed numbered from 1**; a stored target `T` is displayed as `T + 1`. The final instruction of every successful compilation is `end`, so every jump target points at a real instruction.
+Instructions are stored 0-based internally. Backpatching always works on those numeric indices. For **display**, the final TAC uses conventional **labels**:
+
+- Every instruction that is the target of at least one jump receives a label `L1`, `L2`, … assigned in increasing instruction order, so each target has exactly one label and labels are never duplicated.
+- A labelled instruction is printed as `L<k>: <instruction>` (the label replaces its number on that line); all other instructions keep their 1-based number `N: <instruction>`.
+- Jumps print their destination as a label: `if a < b goto L1`, `goto L2`.
+- The final instruction of every successful compilation is `end`, so every jump target and every label points at a real instruction. Unresolved targets (`goto ?`) can appear only in `--trace` output *during* parsing, never in the final TAC.
 
 ```
 result = arg1              assignment / copy
 result = arg1 op arg2      arithmetic
-if arg1 relop arg2 goto L  conditional jump
-goto L                     unconditional jump
+if arg1 relop arg2 goto Lk conditional jump
+goto Lk                    unconditional jump
 end                        program end marker
 ```
+
+Note on the trace: `--trace` shows the compiler's *internal* numeric view while backpatching happens (targets appear as instruction numbers, e.g. `backpatch(list {3}, target 5)`); the final TAC printed at the end of the same run uses the label mapping described above.
 
 ## 11. Backpatching algorithm
 
@@ -205,7 +214,7 @@ Run `./compiler --trace <file>` to see every emission, `makelist`, `merge`, and 
 
 ### Validation
 
-Before printing, `validate_tac()` checks every instruction: no jump may remain unpatched (`target == -1`), every jump target must be inside the instruction array, and assignments/arithmetic/conditional instructions must be well-formed. Any violation prints `Validation error: ...` and the compiler exits non-zero without printing TAC.
+Before printing, `validate_tac()` checks: the program ends with the `end` instruction; no jump remains unpatched (`target == -1`); every jump target is inside the instruction array; the label assignment is consistent (every jump target has exactly one label, labels `L1..Lk` are unique and gap-free); and assignments/arithmetic/conditional instructions are well-formed. Any violation prints `Validation error: ...` and the compiler exits non-zero without printing TAC.
 
 ## 12. Build and execution
 
@@ -216,7 +225,7 @@ make run             # build + run examples/if_else.src
 ./compiler --tokens examples/if_else.src # token dump only
 ./compiler --trace  examples/if_else.src # backpatching trace + TAC
 ./compiler < examples/if_else.src        # read from stdin
-make test            # automated suite (24 tests)
+make test            # automated suite (28 tests)
 make debug           # sanitizer build (compiler_debug) + parser.output
 make clean           # remove generated files
 ```
@@ -244,11 +253,11 @@ How it flows through the compiler:
 2. **Parser/SDT** — assignments emit instructions 1–2. The condition emits instructions 3–4 with `goto ?` targets; `truelist = {3}`, `falselist = {4}`.
 3. **Then-branch** — marker `M1 = 5`; instructions 5–6 (`t1 = a + b`, `c = t1`); marker `N` emits instruction 7 (`goto ?`).
 4. **Else-branch** — marker `M2 = 8`; instructions 8–9.
-5. **Backpatching** (from the actual `--trace` log):
-   - `backpatch(list {3}, target 5)` → `3: if a < b goto 5`
-   - `backpatch(list {4}, target 8)` → `4: goto 8`
-   - exits merged, then at program end `backpatch(list {7}, target 10)` → `7: goto 10`
-6. **Validation** passes (no unresolved targets, all targets in range), then the final TAC is printed.
+5. **Backpatching** (from the actual `--trace` log, which shows internal instruction numbers):
+   - `backpatch(list {3}, target 5)` — the true jump now targets instruction 5 (the then-branch).
+   - `backpatch(list {4}, target 8)` — the false jump targets instruction 8 (the else-branch).
+   - Exits merged, then at program end `backpatch(list {7}, target 10)` — the then-exit targets instruction 10 (`end`).
+6. **Validation** passes (no unresolved targets, all targets in range, labels consistent). In the printed TAC, the target instructions 5, 8 and 10 receive labels `L1`, `L2` and `L3` (in instruction order), and the jumps print those labels.
 
 Actual output (`results/sample_output.txt`):
 
@@ -256,36 +265,41 @@ Actual output (`results/sample_output.txt`):
 Three Address Code:
 1: a = 10
 2: b = 20
-3: if a < b goto 5
-4: goto 8
-5: t1 = a + b
+3: if a < b goto L1
+4: goto L2
+L1: t1 = a + b
 6: c = t1
-7: goto 10
-8: t2 = a - b
+7: goto L3
+L2: t2 = a - b
 9: c = t2
-10: end
+L3: end
 ```
 
-Reading it: if `a < b` is true, control goes to 5 (then-branch) and instruction 7 skips the else-branch; if false, instruction 4 jumps to 8 (else-branch). Both paths continue at 10.
+Reading it: if `a < b` is true, control goes to `L1` (the then-branch, instruction 5) and instruction 7 skips the else-branch to `L3`; if false, instruction 4 jumps to `L2` (the else-branch, instruction 8). Both paths continue at `L3` (`end`, instruction 10).
 
-Nested example (`examples/nested_if_else.src`, output in `results/tac_output.txt`): the outer false jump lands on the second inner `if` (instruction 12), both inner then-branches exit to instruction 17 — demonstrating that merged `nextlist`s are patched correctly through nesting.
+Two more reference examples (full outputs in `results/tac_output.txt`):
+
+- **Simple if** (`examples/simple_if_gt.src`): `a = 5; if (a > 0) { b = a * 2; }` compiles to `1: a = 5`, `2: if a > 0 goto L1`, `3: goto L2`, `L1: t1 = a * 2`, `5: b = t1`, `L2: end` — the false jump goes straight to `end`.
+- **Nested if-else** (`examples/nested_if_else.src`): the outer false jump lands on the second inner `if` (label `L2`), the inner branches exit to `L5` (`done = result`) — demonstrating that merged `nextlist`s are patched correctly through nesting. A second nested program, `examples/nested_simple.src`, exercises the same paths with different nesting.
 
 ## 14. Test results
 
-`make test` runs `tests/test_compiler.sh`: **24 tests, 24 passed, 0 failed** (full genuine log: `results/test_results.txt`). The suite covers assignments, all four arithmetic operators, precedence and parentheses, simple `if`, `if–else`, nested `if–else`, multiple statements in blocks, sequential conditionals, all six relational operators, empty blocks, six error cases (missing semicolon/brace/parenthesis, invalid character, incomplete conditional, `else` without `if`), dangling-else association, false-branch and true-branch skipping, nested target structure, division-by-zero-as-syntax, parenthesised conditions, and unary minus. Structural tests extract the numbered TAC and compare actual goto targets against the branch instructions they must point to.
+`make test` runs `tests/test_compiler.sh`: **28 tests, 28 passed, 0 failed** (full genuine log: `results/test_results.txt`). The suite covers assignments, all four arithmetic operators, precedence and parentheses, simple `if`, `if–else`, nested `if–else`, multiple statements in blocks, sequential conditionals, all six relational operators, empty blocks, eight error cases (missing semicolon/brace/parenthesis/expression, invalid character, incomplete conditional, malformed conditional, `else` without `if`), dangling-else association, false-branch and true-branch skipping, nested target structure, division-by-zero-as-syntax, parenthesised conditions, unary minus, label integrity (T25: defined labels exactly equal referenced labels, no numeric/unresolved `goto` remains), and forward-jump/end-marker structure (T28). Structural tests parse the labelled TAC, resolve every `goto Lk` through the label definitions, and compare the resolved targets against the branch instructions they must point to — so the label mapping itself is verified, not trusted.
+
+Harness note (v2): an earlier field run of this suite on a WSL lab machine reported 15/24 with `unbound variable` / `bad array subscript` errors at the old line 52 — when a compiler run yielded no TAC, the old helpers indexed the empty result array and the failure cascaded. The harness is now bounds-checked throughout: a run that produces no TAC fails cleanly with the compiler's exit code and stderr shown, `sh` invocation is rejected with a clear message (bash is required), and no test was weakened — the same structural assertions run, now label-aware.
 
 The compiler was also run under AddressSanitizer + UndefinedBehaviorSanitizer (`make debug`) over all valid examples with **no findings** (including leak checking).
 
 ## 15. Screenshots
 
-Real screenshots from running the demo on Windows (Ubuntu under WSL) are in `results/screenshots/`, numbered in demo order: the build, each example's TAC output (assignment, arithmetic, simple if, if–else, sequential if, nested if–else, multiple statements), the invalid-syntax error, and the backpatching trace. The text logs in `results/` (`build_log.txt`, `test_results.txt`, `tokens.txt`, `tac_output.txt`, `backpatch_trace.txt`) are genuine captured outputs of the same runs.
+Screenshots are in `results/screenshots/` (index with per-file purpose and capture method: `results/screenshots/SCREENSHOTS.md`): 12 images covering the clean build, each example's labelled TAC output (assignment, arithmetic, simple if, if–else, sequential if, nested if–else, multiple statements), tokenization, the backpatching trace, syntax-error handling, and the full test run showing **28 passed, 0 failed** with its final summary. All images show genuine unedited output of the current build; because the build environment is headless, they are rendered from the captured terminal output (see the index file for details and for the commands to re-capture natively). The text logs in `results/` (`build_log.txt`, `test_results.txt`, `tokens.txt`, `tac_output.txt`, `backpatch_trace.txt`) are genuine captured outputs of the same runs.
 
 ## 16. Limitations
 
 - Integer-only arithmetic; no floating point, characters, or strings.
 - Conditions must be a single relational comparison (optionally parenthesised). No `&&`, `||`, `!`, and no using a bare variable as a condition (`if (x)` is a syntax error).
 - No declarations, symbol table, or type checking; using an unassigned variable is not detected.
-- No loops, functions, arrays, or pointers.
+- No loops, functions, arrays, or pointers. Consequently every jump in the generated TAC is a forward reference; there are no backward jumps.
 - No comments in source programs.
 - Division by zero *in the source* (e.g. `x = a / 0;`) is accepted and translated to TAC (`t1 = a / 0`) — this compiler never evaluates expressions, so nothing is divided at compile time; a runtime for the TAC would be responsible for trapping it (test T22 documents this).
 - Very large programs are capped at 4096 TAC instructions (guard in `tac.c`).

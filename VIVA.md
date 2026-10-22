@@ -12,7 +12,7 @@ The pipeline has four parts. The Flex lexer converts characters into tokens like
 
 The most important part is how control flow is generated. When the parser sees a condition like `a < b`, it does not yet know where the true and false branches start, so it emits jumps with unresolved targets — `if a < b goto ?` and `goto ?`. It remembers these instructions in the condition's truelist and falselist. When the branches have been generated and their starting instructions are known, backpatching fills the targets in. Statements also carry a nextlist of jumps that must land on whatever comes after the statement; lists are combined with merge and patched by the surrounding context.
 
-Before printing, a validator checks that no jump is left unpatched and every target is a valid instruction. The project has an automated test suite of 24 tests that check the actual jump targets in the generated code — for example that a false condition really skips the true branch, and that in a dangling-else program the else belongs to the inner if. All 24 tests pass."
+Before printing, a validator checks that no jump is left unpatched and every target is a valid instruction; in the printed code, jump targets are shown as labels (L1, L2, …). The project has an automated test suite of 28 tests that check the actual jump targets in the generated code — for example that a false condition really skips the true branch, and that in a dangling-else program the else belongs to the inner if. All 28 tests pass."
 
 ## The pipeline in one paragraph
 
@@ -161,6 +161,9 @@ The ambiguity of which `if` an `else` belongs to. Solved grammatically with matc
 **21. Why are instructions numbered from 1 but stored from 0?**
 C arrays are 0-based, so internally targets are array indices; the display adds 1 because humans (and textbooks) count instructions from 1. The conversion is documented and applied in exactly one place, the printer.
 
+**21b. Why do some lines show labels (L1, L2) instead of numbers?**
+Labels are the conventional way to present TAC. After backpatching — which always works on the numeric indices — every instruction that is a jump target gets one label, assigned in instruction order (`L1`, `L2`, …); that line prints `L<k>:` instead of its number, and jumps print `goto L<k>`. Labels are purely a display mapping over the patched numeric targets — they do not replace backpatching — and the validator checks that every jump target has exactly one label and that labels are unique.
+
 **22. What happens on `x = a / 0;`?**
 It compiles: TAC contains `t1 = a / 0`. The compiler never evaluates expressions, so there is no compile-time division; a runtime would trap it. Test T22 documents this behaviour.
 
@@ -171,7 +174,7 @@ No declarations and no symbol table in this version — assignment introduces a 
 No. A condition must be one relational comparison, optionally parenthesised. Short-circuit boolean operators are the natural next extension of the same truelist/falselist machinery.
 
 **25. How did you test the compiler beyond "it compiles"?**
-A 24-test automated suite (`make test`) that, besides exit codes, extracts the numbered TAC and asserts exact jump targets: false jumps land on else-branches, then-exits land after the if–else, the dangling-else targets are correct, nested exits merge to the right instruction. Error cases must fail with the right error class and line numbers. The binary was also run under AddressSanitizer/UBSan with no findings.
+A 28-test automated suite (`make test`) that, besides exit codes, parses the labelled TAC, resolves every `goto Lk` through the label definitions, and asserts exact jump targets: false jumps land on else-branches, then-exits land after the if–else, the dangling-else targets are correct, nested exits merge to the right instruction. It also checks label integrity (defined labels exactly equal referenced labels) and that all jumps are forward references ending at `end`. Error cases must fail with the right error class and line numbers. The binary was also run under AddressSanitizer/UBSan with no findings.
 
 **26. Why does a sequence of statements need backpatching at all?**
 Because a statement like an `if` ends with jumps whose destination is "whatever comes next" — unknown until the next statement is parsed. The sequence rule patches the previous statement's nextlist with the marker captured before the next statement.
