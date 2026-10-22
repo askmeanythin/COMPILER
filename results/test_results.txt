@@ -1,0 +1,29 @@
+bash tests/test_compiler.sh
+================ Compiler test suite ================
+T01 | Simple assignment | Expected: exit 0, plain copy assignments | Actual: exit 0, assignments found | PASS
+T02 | Addition and subtraction | Expected: temps for a+b and a-b | Actual: both present | PASS
+T03 | Operator precedence and parentheses | Expected: * before + for a+b*c; (a+b) before * for (a+b)*c | Actual: mul@4 add@5 paren-add@10 paren-mul@11 | PASS
+T04 | Multiplication and division | Expected: temps for a*b and a/b | Actual: both present | PASS
+T05 | Simple if | Expected: if->5 (then), goto->6 (after) | Actual: if->5, goto->6 | PASS
+T06 | If-else structure | Expected: then-branch (+ ) before else-branch (-) | Actual: if@3 then@5 else@8 | PASS
+T07 | Nested if-else targets | Expected: outer true->inner1@6, outer false->inner2@12, exits->done@17 | Actual: true->6 false->12 exits->17,17 | PASS
+T08 | Multiple statements in blocks | Expected: 3 then-stmts + 3 else-stmts, skip goto->after@15 | Actual: skip->15 | PASS
+T09 | Sequential conditionals | Expected: if1 false->if2@6 | Actual: if1 false->6 | PASS
+T10 | All relational operators | Expected: 6 operators in conditions | Actual: 6 found | PASS
+T11 | Empty blocks | Expected: exit 0, no unpatched jumps | Actual: exit 0, valid TAC | PASS
+T12 | Missing semicolon | Expected: non-zero exit + error matching 'Syntax error at line [0-9]+' | Actual: exit=1, error reported | PASS
+T13 | Missing closing brace | Expected: non-zero exit + error matching 'Syntax error at line [0-9]+' | Actual: exit=1, error reported | PASS
+T14 | Missing closing parenthesis | Expected: non-zero exit + error matching 'Syntax error at line [0-9]+' | Actual: exit=1, error reported | PASS
+T15 | Invalid characters | Expected: non-zero exit + error matching 'Lexical error at line 2: invalid character '@'' | Actual: exit=1, error reported | PASS
+T16 | Incomplete conditional | Expected: non-zero exit + error matching 'Syntax error at line [0-9]+' | Actual: exit=1, error reported | PASS
+T17 | Else without matching if | Expected: non-zero exit + error matching 'Syntax error at line [0-9]+' | Actual: exit=1, error reported | PASS
+T18 | Dangling-else association | Expected: inner false->x=2@11, outer false->end@12 | Actual: inner false->11, outer false->12 | PASS
+T19 | False condition skips true branch | Expected: false goto->else@8 | Actual: false goto->8 | PASS
+T20 | True branch skips false branch | Expected: then-exit goto->end@10 | Actual: exit goto->10 | PASS
+T21 | Nested control flow, multiple targets | Expected: >=5 distinct targets, none unresolved | Actual: 7 distinct targets | PASS
+T22 | Division by zero (syntax only) | Expected: accepted, TAC contains a / 0 (not evaluated) | Actual: exit 0, TAC generated | PASS
+T23 | Parenthesised condition (extra) | Expected: exit 0, if generated | Actual: exit 0 | PASS
+T24 | Unary minus (extra) | Expected: compiled as 0 - a | Actual: exit 0, 0 - a present | PASS
+======================================================
+Tests passed: 24, failed: 0, total: 24
+ALL TESTS PASSED

@@ -1,0 +1,19 @@
+Three Address Code:
+1: a = 10
+2: b = 20
+3: c = 5
+4: if a < b goto 6
+5: goto 12
+6: if b > c goto 8
+7: goto 10
+8: result = 1
+9: goto 17
+10: result = 2
+11: goto 17
+12: if a == c goto 14
+13: goto 16
+14: result = 3
+15: goto 17
+16: result = 4
+17: done = result
+18: end

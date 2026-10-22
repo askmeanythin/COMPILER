@@ -1,0 +1,18 @@
+a = 10;
+b = 20;
+c = 5;
+
+if (a < b) {
+    if (b > c) {
+        result = 1;
+    } else {
+        result = 2;
+    }
+} else {
+    if (a == c) {
+        result = 3;
+    } else {
+        result = 4;
+    }
+}
+done = result;

@@ -1,0 +1,195 @@
+===== examples/arithmetic.src =====
+a = 10;
+b = 3;
+c = a + b * 2;
+d = (a - b) / b;
+e = a * b - c / 2;
+f = -a + c;
+--- output ---
+Three Address Code:
+1: a = 10
+2: b = 3
+3: t1 = b * 2
+4: t2 = a + t1
+5: c = t2
+6: t3 = a - b
+7: t4 = t3 / b
+8: d = t4
+9: t5 = a * b
+10: t6 = c / 2
+11: t7 = t5 - t6
+12: e = t7
+13: t8 = 0 - a
+14: t9 = t8 + c
+15: f = t9
+16: end
+exit code: 0
+
+===== examples/assignment.src =====
+a = 10;
+b = 20;
+total = a;
+count = total;
+--- output ---
+Three Address Code:
+1: a = 10
+2: b = 20
+3: total = a
+4: count = total
+5: end
+exit code: 0
+
+===== examples/if_else.src =====
+a = 10;
+b = 20;
+
+if (a < b) {
+    c = a + b;
+} else {
+    c = a - b;
+}
+--- output ---
+Three Address Code:
+1: a = 10
+2: b = 20
+3: if a < b goto 5
+4: goto 8
+5: t1 = a + b
+6: c = t1
+7: goto 10
+8: t2 = a - b
+9: c = t2
+10: end
+exit code: 0
+
+===== examples/invalid_syntax.src =====
+a = 10;
+b = 20
+c = a + b;
+--- output ---
+Syntax error at line 3: syntax error, unexpected ID
+Compilation failed: 1 syntax error(s), 0 lexical error(s)
+exit code: 1
+
+===== examples/multiple_statements.src =====
+a = 1;
+b = 2;
+if (a <= b) {
+    a = a + 1;
+    b = b + 2;
+    c = a * b;
+} else {
+    a = 0;
+    b = 0;
+    c = 0;
+}
+d = c + 1;
+--- output ---
+Three Address Code:
+1: a = 1
+2: b = 2
+3: if a <= b goto 5
+4: goto 12
+5: t1 = a + 1
+6: a = t1
+7: t2 = b + 2
+8: b = t2
+9: t3 = a * b
+10: c = t3
+11: goto 15
+12: a = 0
+13: b = 0
+14: c = 0
+15: t4 = c + 1
+16: d = t4
+17: end
+exit code: 0
+
+===== examples/nested_if_else.src =====
+a = 10;
+b = 20;
+c = 5;
+
+if (a < b) {
+    if (b > c) {
+        result = 1;
+    } else {
+        result = 2;
+    }
+} else {
+    if (a == c) {
+        result = 3;
+    } else {
+        result = 4;
+    }
+}
+done = result;
+--- output ---
+Three Address Code:
+1: a = 10
+2: b = 20
+3: c = 5
+4: if a < b goto 6
+5: goto 12
+6: if b > c goto 8
+7: goto 10
+8: result = 1
+9: goto 17
+10: result = 2
+11: goto 17
+12: if a == c goto 14
+13: goto 16
+14: result = 3
+15: goto 17
+16: result = 4
+17: done = result
+18: end
+exit code: 0
+
+===== examples/sequential_if.src =====
+a = 1;
+b = 2;
+if (a < b) {
+    x = 10;
+}
+if (b > a) {
+    y = 20;
+} else {
+    y = 30;
+}
+z = x + y;
+--- output ---
+Three Address Code:
+1: a = 1
+2: b = 2
+3: if a < b goto 5
+4: goto 6
+5: x = 10
+6: if b > a goto 8
+7: goto 10
+8: y = 20
+9: goto 11
+10: y = 30
+11: t1 = x + y
+12: z = t1
+13: end
+exit code: 0
+
+===== examples/simple_if.src =====
+a = 5;
+b = 10;
+if (a < b) {
+    c = 1;
+}
+d = 2;
+--- output ---
+Three Address Code:
+1: a = 5
+2: b = 10
+3: if a < b goto 5
+4: goto 6
+5: c = 1
+6: d = 2
+7: end
+exit code: 0
+

@@ -1,0 +1,117 @@
+===== ./compiler --trace examples/if_else.src =====
+Backpatching trace:
+TRACE: emitted instruction 1: a = 10
+TRACE: emitted instruction 2: b = 20
+TRACE: makelist(3) -> list {3}
+TRACE: instruction 3 has UNRESOLVED target
+TRACE: emitted instruction 3: if a < b goto ?
+TRACE: makelist(4) -> list {4}
+TRACE: instruction 4 has UNRESOLVED target
+TRACE: emitted instruction 4: goto ?
+TRACE: emitted instruction 5: t1 = a + b
+TRACE: emitted instruction 6: c = t1
+TRACE: makelist(7) -> list {7}
+TRACE: instruction 7 has UNRESOLVED target
+TRACE: emitted instruction 7: goto ?
+TRACE: emitted instruction 8: t2 = a - b
+TRACE: emitted instruction 9: c = t2
+TRACE: backpatch(list {3}, target 5)
+TRACE:   instruction 3 is now: if a < b goto 5
+TRACE: backpatch(list {4}, target 8)
+TRACE:   instruction 4 is now: goto 8
+TRACE: merge({7}, {})
+TRACE: merge({}, {7})
+TRACE: emitted instruction 10: end
+TRACE: backpatch(list {7}, target 10)
+TRACE:   instruction 7 is now: goto 10
+Three Address Code:
+1: a = 10
+2: b = 20
+3: if a < b goto 5
+4: goto 8
+5: t1 = a + b
+6: c = t1
+7: goto 10
+8: t2 = a - b
+9: c = t2
+10: end
+
+===== ./compiler --trace examples/nested_if_else.src =====
+Backpatching trace:
+TRACE: emitted instruction 1: a = 10
+TRACE: emitted instruction 2: b = 20
+TRACE: emitted instruction 3: c = 5
+TRACE: makelist(4) -> list {4}
+TRACE: instruction 4 has UNRESOLVED target
+TRACE: emitted instruction 4: if a < b goto ?
+TRACE: makelist(5) -> list {5}
+TRACE: instruction 5 has UNRESOLVED target
+TRACE: emitted instruction 5: goto ?
+TRACE: makelist(6) -> list {6}
+TRACE: instruction 6 has UNRESOLVED target
+TRACE: emitted instruction 6: if b > c goto ?
+TRACE: makelist(7) -> list {7}
+TRACE: instruction 7 has UNRESOLVED target
+TRACE: emitted instruction 7: goto ?
+TRACE: emitted instruction 8: result = 1
+TRACE: makelist(9) -> list {9}
+TRACE: instruction 9 has UNRESOLVED target
+TRACE: emitted instruction 9: goto ?
+TRACE: emitted instruction 10: result = 2
+TRACE: backpatch(list {6}, target 8)
+TRACE:   instruction 6 is now: if b > c goto 8
+TRACE: backpatch(list {7}, target 10)
+TRACE:   instruction 7 is now: goto 10
+TRACE: merge({9}, {})
+TRACE: merge({}, {9})
+TRACE: makelist(11) -> list {11}
+TRACE: instruction 11 has UNRESOLVED target
+TRACE: emitted instruction 11: goto ?
+TRACE: makelist(12) -> list {12}
+TRACE: instruction 12 has UNRESOLVED target
+TRACE: emitted instruction 12: if a == c goto ?
+TRACE: makelist(13) -> list {13}
+TRACE: instruction 13 has UNRESOLVED target
+TRACE: emitted instruction 13: goto ?
+TRACE: emitted instruction 14: result = 3
+TRACE: makelist(15) -> list {15}
+TRACE: instruction 15 has UNRESOLVED target
+TRACE: emitted instruction 15: goto ?
+TRACE: emitted instruction 16: result = 4
+TRACE: backpatch(list {12}, target 14)
+TRACE:   instruction 12 is now: if a == c goto 14
+TRACE: backpatch(list {13}, target 16)
+TRACE:   instruction 13 is now: goto 16
+TRACE: merge({15}, {})
+TRACE: merge({}, {15})
+TRACE: backpatch(list {4}, target 6)
+TRACE:   instruction 4 is now: if a < b goto 6
+TRACE: backpatch(list {5}, target 12)
+TRACE:   instruction 5 is now: goto 12
+TRACE: merge({11}, {15})
+TRACE: merge({9}, {11,15})
+TRACE: emitted instruction 17: done = result
+TRACE: backpatch(list {9,11,15}, target 17)
+TRACE:   instruction 9 is now: goto 17
+TRACE:   instruction 11 is now: goto 17
+TRACE:   instruction 15 is now: goto 17
+TRACE: emitted instruction 18: end
+Three Address Code:
+1: a = 10
+2: b = 20
+3: c = 5
+4: if a < b goto 6
+5: goto 12
+6: if b > c goto 8
+7: goto 10
+8: result = 1
+9: goto 17
+10: result = 2
+11: goto 17
+12: if a == c goto 14
+13: goto 16
+14: result = 3
+15: goto 17
+16: result = 4
+17: done = result
+18: end

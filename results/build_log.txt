@@ -1,0 +1,13 @@
+$ make clean
+rm -f compiler compiler_debug lex.yy.c parser.tab.c parser.tab.h \
+      parser.output *.o
+
+$ make
+bison -d -o parser.tab.c parser.y
+flex -o lex.yy.c lexer.l
+gcc -Wall -Wextra -Wpedantic -std=gnu11 -g -o compiler lex.yy.c parser.tab.c tac.c main.c
+
+Build exit code: 0
+Compiler warnings above: none. Bison conflicts: none reported
+(operator-precedence resolutions are recorded in parser.output
+ when built with 'make debug'; see README 'Parser conflicts').
