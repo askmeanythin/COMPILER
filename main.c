@@ -1,19 +1,3 @@
-/*
- * main.c - Command-line driver for the if-else compiler.
- *
- * Usage:
- *   ./compiler [options] [file]
- *
- * Options:
- *   --tokens   Lexical analysis only: print the token stream.
- *   --trace    Print the backpatching trace (instruction emission,
- *              makelist / merge / backpatch operations), then the TAC.
- *   --help     Show usage.
- *
- * Input is read from the named file, or from standard input when no
- * file is given. Exit status is 0 on success and 1 on any lexical,
- * syntax, or TAC validation error.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
