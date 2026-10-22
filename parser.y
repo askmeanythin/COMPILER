@@ -1,38 +1,3 @@
-/*
- * parser.y - Bison grammar with syntax-directed translation and
- *            genuine backpatching for if / if-else statements.
- *
- * Grammar (see README.md for the same grammar in readable form):
- *
- *   program    -> stmt_list
- *   stmt_list  -> stmt_list M stmt | stmt
- *   stmt       -> matched | unmatched
- *   matched    -> IF ( bool ) M matched N ELSE M matched
- *               | { stmt_list } | { }
- *               | ID = expr ;
- *   unmatched  -> IF ( bool ) M stmt
- *               | IF ( bool ) M matched N ELSE M unmatched
- *   bool       -> expr relop expr | ( bool )
- *   expr       -> expr + expr | expr - expr | expr * expr | expr / expr
- *               | - expr | ( expr ) | ID | NUM
- *   M          -> <empty>   { $$ = nextinstr(); }
- *   N          -> <empty>   { emit an unresolved goto; $$ = makelist of it }
- *
- * The matched/unmatched split is the standard textbook solution to
- * the dangling-else problem: an "else" always belongs to the nearest
- * unmatched "if", and this grammar produces ZERO shift/reduce and
- * ZERO reduce/reduce conflicts (see the bison report in the build
- * log / parser.output when built with `make debug`).
- *
- * Backpatching summary:
- *   - bool emits "if a < b goto ?" (truelist) and "goto ?" (falselist)
- *     with genuinely unresolved targets (-1).
- *   - IF rule: backpatch(truelist, M before then-branch),
- *              backpatch(falselist, M before else-branch / after if).
- *   - N emits the exit jump of the then-branch; its list is merged
- *     into the statement's nextlist and patched by the enclosing
- *     context (sequence marker M, or main() at the "end" marker).
- */
 %{
 #include <stdio.h>
 #include <stdlib.h>
