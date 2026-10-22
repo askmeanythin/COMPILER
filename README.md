@@ -81,7 +81,7 @@ if_else_compiler/
     ├── environment.txt     build_log.txt      test_results.txt
     ├── tokens.txt          sample_input.txt   sample_output.txt
     ├── tac_output.txt      backpatch_trace.txt
-    └── screenshots/        capture instructions (see §15)
+    └── screenshots/        captured demo screenshots (see §15)
 ```
 
 ## 6. Grammar
@@ -278,7 +278,7 @@ The compiler was also run under AddressSanitizer + UndefinedBehaviorSanitizer (`
 
 ## 15. Screenshots
 
-The build environment is a headless VM, so no GUI screenshots were fabricated. `results/screenshots/SCREENSHOT_INSTRUCTIONS.txt` lists the exact six commands to screenshot on your own machine (build, TAC, nested TAC, trace, tests, error) and how to capture them on Ubuntu/WSL. The text logs in `results/` are the genuine execution evidence.
+Real screenshots from running the demo on Windows (Ubuntu under WSL) are in `results/screenshots/`, numbered in demo order: the build, each example's TAC output (assignment, arithmetic, simple if, if–else, sequential if, nested if–else, multiple statements), the invalid-syntax error, and the backpatching trace. The text logs in `results/` (`build_log.txt`, `test_results.txt`, `tokens.txt`, `tac_output.txt`, `backpatch_trace.txt`) are genuine captured outputs of the same runs.
 
 ## 16. Limitations
 
